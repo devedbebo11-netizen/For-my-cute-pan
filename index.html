@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cyber Repair: For My Cute Pan 💗</title>
+    <style>
+        :root {
+            --bg-color: #050508;
+            --board-bg: #0c0d14;
+            --neon-off: #1f2335;
+            --neon-on: #00ffcc;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h2 {
+            color: #666;
+            font-size: 0.85rem;
+            margin: 0;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            margin: 5px 0 0 0;
+            background: linear-gradient(45deg, #ff0055, #00ffcc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 0, 85, 0.2);
+        }
+
+        .header p {
+            font-size: 0.8rem;
+            color: #444;
+            margin: 8px 0 0 0;
+            letter-spacing: 1px;
+        }
+
+        .game-container {
+            background: var(--board-bg);
+            border: 2px solid #1a1d29;
+            border-radius: 24px;
+            padding: 15px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 75px);
+            grid-template-rows: repeat(4, 75px);
+            gap: 10px;
+        }
+
+        .tile {
+            background: #11131c;
+            border: 1px solid #1f2335;
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
+        }
+
+        .tile:active {
+            transform: scale(0.92);
+        }
+
+        .wire {
+            position: absolute;
+            background-color: var(--neon-off);
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+
+        .tile.straight .wire {
+            width: 100%;
+            height: 6px;
+        }
+
+        .tile.corner .wire-1 {
+            width: 55%;
+            height: 6px;
+            left: 45%;
+        }
+        .tile.corner .wire-2 {
+            width: 6px;
+            height: 55%;
+            top: 45%;
+        }
+
+        .tile.connected .wire {
+            background-color: var(--neon-on);
+            box-shadow: 0 0 12px var(--neon-on);
+        }
+        
+        .tile.connected {
+            background: #132224;
+            border-color: rgba(0, 255, 204, 0.2);
+        }
+
+        .tile.source::before, .tile.sink::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .tile.source::before {
+            background: #00ffcc;
+            box-shadow: 0 0 15px #00ffcc;
+        }
+
+        .tile.sink::before {
+            background: #ff0055;
+            box-shadow: 0 0 15px #ff0055;
+        }
+
+        .status-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 330px;
+            margin-top: 20px;
+            padding: 0 5px;
+        }
+
+        .level-text {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #aaa;
+        }
+
+        .btn {
+            background: #11131c;
+            border: 1px solid #1f2335;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn:active {
+            background: #00ffcc;
+            border-color: #00ffcc;
+            color: #000;
+        }
+
+        .win-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 8, 0.93);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s;
+            z-index: 10;
+        }
+
+        .win-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .win-overlay h2 {
+            color: var(--neon-on);
+            text-shadow: 0 0 15px var(--neon-on);
+            margin: 0 0 15px 0;
+            font-size: 1.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>System Repair For</h2>
+        <h1>my cute pan 💗</h1>
+        <p>Connect openings face-to-face to stream power</p>
+    </div>
+
+    <div class="game-container">
+        <div class="grid" id="gameGrid"></div>
+        
+        <div class="win-overlay" id="winOverlay">
+            <h2 id="winMessage">SYSTEM ONLINE</h2>
+            <button class="btn" id="nextBtn" onclick="nextLevel()">NEXT LEVEL</button>
+        </div>
+    </div>
+
+    <div class="status-panel">
+        <div class="level-text" id="levelDisplay">LEVEL: 1</div>
+        <button class="btn" onclick="resetLevel()">RESET</button>
+    </div>
+
+    <script>
+        const gridElement = document.getElementById('gameGrid');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const winOverlay = document.getElementById('winOverlay');
+        const winMessage = document.getElementById('winMessage');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        let currentLevel = 1;
+        let tiles = [];
+        const maxLevels = 3;
+
+        const levelLayouts = {
+            1: [
+                { type: 'straight', r: 0, isSource: true, x: 0, y: 0 }, { type: 'straight', r: 0, x: 1, y: 0 }, { type: 'corner', r: 90, x: 2, y: 0 }, { type: 'straight', r: 90, x: 3, y: 0 },
+                { type: 'straight', r: 90, x: 0, y: 1 }, { type: 'corner', r: 0, x: 1, y: 1 }, { type: 'corner', r: 270, x: 2, y: 1 }, { type: 'straight', r: 90, x: 3, y: 1 },
+                { type: 'corner', r: 0, x: 0, y: 2 }, { type: 'corner', r: 180, x: 1, y: 2 }, { type: 'straight', r: 90, x: 2, y: 2 }, { type: 'corner', r: 90, x: 3, y: 2 },
+                { type: 'straight', r: 0, x: 0, y: 3 }, { type: 'straight', r: 0, x: 1, y: 3 }, { type: 'corner', r: 0, x: 2, y: 3 }, { type: 'corner', r: 270, isSink: true, x: 3, y: 3 }
+            ],
+            2: [
+                { type: 'corner', r: 0, isSource: true, x: 0, y: 0 }, { type: 'straight', r: 0, x: 1, y: 0 }, { type: 'straight', r: 0, x: 2, y: 0 }, { type: 'corner', r: 90, x: 3, y: 0 },
+                { type: 'straight', r: 90, x: 0, y: 1 }, { type: 'corner', r: 0, x: 1, y: 1 }, { type: 'straight', r: 0, x: 2, y: 1 }, { type: 'straight', r: 90, x: 3, y: 1 },
+                { type: 'straight', r: 90, x: 0, y: 2 }, { type: 'corner', r: 270, x: 1, y: 2 }, { type: 'corner', r: 90, x: 2, y: 2 }, { type: 'straight', r: 90, x: 3, y: 2 },
+                { type: 'straight', r: 0, x: 0, y: 3 }, { type: 'straight', r: 0, x: 1, y: 3 }, { type: 'corner', r: 0, x: 2, y: 3 }, { type: 'corner', r: 270, isSink: true, x: 3, y: 3 }
+            ],
+            3: [
+                { type: 'straight', r: 90, isSource: true, x: 0, y: 0 }, { type: 'corner', r: 90, x: 1, y: 0 }, { type: 'straight', r: 0, x: 2, y: 0 }, { type: 'corner', r: 180, x: 3, y: 0 },
+                { type: 'corner', r: 0, x: 0, y: 1 }, { type: 'corner', r: 270, x: 1, y: 1 }, { type: 'straight', r: 90, x: 2, y: 1 }, { type: 'straight', r: 90, x: 3, y: 1 },
+                { type: 'straight', r: 90, x: 0, y: 2 }, { type: 'corner', r: 0, x: 1, y: 2 }, { type: 'corner', r: 180, x: 2, y: 2 }, { type: 'straight', r: 90, x: 3, y: 2 },
+                { type: 'corner', r: 0, x: 0, y: 3 }, { type: 'straight', r: 0, x: 1, y: 3 }, { type: 'corner', r: 270, isSink: true, x: 2, y: 3 }, { type: 'straight', r: 90, x: 3, y: 3 }
+            ]
+        };
+
+        function getOpenings(tile) {
+            let base = [];
+            if (tile.type === 'straight') {
+                base = ['left', 'right'];
+            } else if (tile.type === 'corner') {
+                base = ['bottom', 'right'];
+            }
+
+            const dirOrder = ['top', 'right', 'bottom', 'left'];
+            return base.map(dir => {
+                let idx = dirOrder.indexOf(dir);
+                let shift = tile.rotation / 90;
+                return dirOrder[(idx + shift) % 4];
+            });
+        }
+
+        function initGame() {
+            gridElement.innerHTML = '';
+            tiles = [];
+            winOverlay.classList.remove('active');
+            levelDisplay.innerText = `LEVEL: ${currentLevel}`;
+
+            const layout = levelLayouts[currentLevel];
+
+            layout.forEach((data) => {
+                const tileElement = document.createElement('div');
+                tileElement.classList.add('tile', data.type);
+                
+                if (data.type === 'straight') {
+                    const wire = document.createElement('div');
+                    wire.classList.add('wire');
+                    tileElement.appendChild(wire);
+                } else if (data.type === 'corner') {
+                    const wire1 = document.createElement('div');
+                    const wire2 = document.createElement('div');
+                    wire1.classList.add('wire', 'wire-1');
+                    wire2.classList.add('wire', 'wire-2');
+                    tileElement.appendChild(wire1);
+                    tileElement.appendChild(wire2);
+                }
+
+                if (data.isSource) tileElement.classList.add('source');
+                if (data.isSink) tileElement.classList.add('sink');
+
+                let currentRotation = data.isSource || data.isSink ? data.r : [0, 90, 180, 270][Math.floor(Math.random() * 4)];
+                tileElement.style.transform = `rotate(${currentRotation}deg)`;
+
+                const tileObj = {
+                    element: tileElement,
+                    type: data.type,
+                    rotation: currentRotation,
+                    x: data.x,
+                    y: data.y,
+                    isSource: data.isSource || false,
+                    isSink: data.isSink || false
+                };
+
+                tileElement.addEventListener('click', () => {
+                    if (tileObj.isSource || tileObj.isSink) return;
+                    tileObj.rotation = (tileObj.rotation + 90) % 360;
+                    tileElement.style.transform = `rotate(${tileObj.rotation}deg)`;
+                    updateFlow();
+                });
+
+                gridElement.appendChild(tileElement);
+                tiles.push(tileObj);
+            });
+
+            updateFlow();
+        }
+
+        function updateFlow() {
+            tiles.forEach(t => t.element.classList.remove('connected'));
+
+            let sourceTile = tiles.find(t => t.isSource);
+            if (!sourceTile) return;
+
+            let queue = [sourceTile];
+            let visited = new Set();
+            let hasSinkConnected = false;
+
+            while (queue.length > 0) {
+                let current = queue.shift();
+                let key = `${current.x},${current.y}`;
+                if (visited.has(key)) continue;
+                visited.add(key);
+
+                current.element.classList.add('connected');
+                if (current.isSink) hasSinkConnected = true;
+
+                let currentOpenings = getOpenings(current);
+
+                const neighbors = [
+                    { dir: 'top', dx: 0, dy: -1, opp: 'bottom' },
+                    { dir: 'right', dx: 1, dy: 0, opp: 'left' },
+                    { dir: 'bottom', dx: 0, dy: 1, opp: 'top' },
+                    { dir: 'left', dx: -1, dy: 0, opp: 'right' }
+                ];
+
+                neighbors.forEach(n => {
+                    if (currentOpenings.includes(n.dir)) {
+                        let nx = current.x + n.dx;
+                        let ny = current.y + n.dy;
+                        let nextTile = tiles.find(t => t.x === nx && t.y === ny);
+
+                        if (nextTile) {
+                            let nextOpenings = getOpenings(nextTile);
+                            if (nextOpenings.includes(n.opp)) {
+                                queue.push(nextTile);
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (hasSinkConnected) {
+                setTimeout(() => {
+                    if (currentLevel === maxLevels) {
+                        winMessage.innerText = "ALL SYSTEMS ONLINE! ⚡";
+                        nextBtn.innerText = "PLAY AGAIN";
+                    } else {
+                        winMessage.innerText = "SYSTEM REPAIRED";
+                        nextBtn.innerText = "NEXT LEVEL";
+                    }
+                    winOverlay.classList.add('active');
+                }, 400);
+            }
+        }
+
+        function resetLevel() {
+            initGame();
+        }
+
+        function nextLevel() {
+            if (currentLevel === maxLevels) {
+                currentLevel = 1;
+            } else {
+                currentLevel++;
+            }
+            initGame();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
